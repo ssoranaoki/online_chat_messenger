@@ -201,6 +201,8 @@ class ChatServer:
                     response_data = self._join_room(
                         room_name, user_name, client_address[0], client_udp_port
                     )
+                elif operation == 3:  # ルーム一覧表示
+                    response_data = self._list_rooms()
                 else:  # 例外処理
                     response_data = {
                         "state": 1,
@@ -279,6 +281,11 @@ class ChatServer:
             "token": user_token,
             "message": f"ルーム名：{room_name}に参加しました",
         }
+
+    def _list_rooms(self) -> dict[str, Any] | None:
+        """ルーム一覧表示"""
+        print(f"ルーム一覧: {list(self.chat_rooms.keys())}")
+        return {"state": 2, "status": "success", "message": list(self.chat_rooms.keys())}
 
     def _sned_tcp_response(
         self,

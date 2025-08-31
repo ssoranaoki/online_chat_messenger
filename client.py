@@ -64,9 +64,10 @@ class ChatClient:
                 # 無効な選択
                 case _:
                     print(f"{user_choice}は無効な選択です。選択肢を確認してください")
-
-        # UDP接続開始
-        self._start_udp_chat()
+        # ルーム一覧表示の場合はUDP接続開始しない。それ以外はUDP接続開始
+        if user_choice != self.LIST_ROOMS:
+            # UDP接続開始
+            self._start_udp_chat()
 
     def _create_room(self):
         """ルーム作成"""
@@ -86,6 +87,8 @@ class ChatClient:
 
         # サーバーにルーム作成リクエストを送信
         self.operation = self.operation_room_create
+        # ユーザーに表示
+        print(f"作成したいルーム名：{room_name}")
         return self._send_tcp_request_and_receve_data(
             room_name, user_name, self.operation_room_create
         )
@@ -186,7 +189,7 @@ class ChatClient:
             # デバッグ
             # print(f"リクエストデータ：{request_data}")
             # 送信内容をユーザーに表示
-            print(f"TCPリクエストを送信しました: 作成したいルーム名{room_name}")
+            # print(f"TCPリクエストを送信しました: 作成したいルーム名{room_name}")
             # return True
         except ConnectionRefusedError as e:
             print(f"TCP接続エラー: {e}")
@@ -223,6 +226,8 @@ class ChatClient:
 
             # json形式に変更
             response_json = json.loads(response_payload)
+            # デバッグ
+            print(f"response_json: {response_json}")
 
             # レスポンスのステータスを確認して処理
             if response_json.get("status") == "success":
@@ -231,9 +236,9 @@ class ChatClient:
                 self.room_name = response_room_name
                 self.username = user_name
                 # デバッグ
-                print(f"ルーム名: {self.room_name}")
-                print(f"ユーザー名: {self.username}")
-                print(f"トークン: {self.token}")
+                # print(f"ルーム名: {self.room_name}")
+                # print(f"ユーザー名: {self.username}")
+                # print(f"トークン: {self.token}")
 
                 # 設定内容をユーザーに表示
                 if operation == self.operation_room_create:
@@ -251,6 +256,10 @@ class ChatClient:
                     print("トークンは大切に保管してください")
                     print("--------------------------------")
                 elif operation == self.operation_list_rooms:
+                    print("--------------------------------")
+                    print("現在アクティブなルーム一覧:")
+                    for index, room in enumerate(response_json.get("message"), start=1):
+                        print(f"ルーム{index}: {room}")
                     print("--------------------------------")
 
                 return True
@@ -284,8 +293,9 @@ class ChatClient:
             # UDPソケット作成
             send_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-            print(f"\n=== チャットルーム '{self.room_name}' に接続しました ===")
-            print(f"[{self.username}] として参加中...")
+            print(
+                f"\n=== チャットルーム '{self.room_name}' ユーザー名 '{self.username}' ==="
+            )
             print("メッセージを入力してください。'/quit' で退出します。\n")
 
             while self.is_client_running:
