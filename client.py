@@ -21,6 +21,9 @@ class ChatClient:
         self.udp_socket = None
         self.my_udp_port = 0  # 自動割り当て
 
+        # TCPソケット作成
+        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         # メニュー選択肢の定数
         self.CREATE_ROOM = "1"
         self.JOIN_ROOM = "2"
@@ -64,6 +67,10 @@ class ChatClient:
                 # 無効な選択
                 case _:
                     print(f"{user_choice}は無効な選択です。選択肢を確認してください")
+
+        # TCPメッセージを受信
+        self._receve_tcp_message()
+
         # ルーム一覧表示の場合はUDP接続開始しない。それ以外はUDP接続開始
         if user_choice != self.LIST_ROOMS:
             # UDP接続開始
@@ -89,9 +96,7 @@ class ChatClient:
         self.operation = self.operation_room_create
         # ユーザーに表示
         print(f"作成したいルーム名：{room_name}")
-        return self._send_tcp_request_and_receve_data(
-            room_name, user_name, self.operation_room_create
-        )
+        return self._send_tcp_request(room_name, user_name, self.operation_room_create)
 
     def _join_room(self):
         """ルームに参加"""
@@ -111,15 +116,13 @@ class ChatClient:
 
         # サーバーにルームに参加リクエストを送信
         self.operation = self.operation_room_join
-        return self._send_tcp_request_and_receve_data(
-            room_name, user_name, self.operation_room_join
-        )
+        return self._send_tcp_request(room_name, user_name, self.operation_room_join)
 
     def _list_rooms(self):
         """ルーム一覧表示"""
         # サーバーにルーム一覧表示リクエストを送信
         self.operation = self.operation_list_rooms
-        return self._send_tcp_request_and_receve_data("", "", self.operation_list_rooms)
+        return self._send_tcp_request("", "", self.operation_list_rooms)
 
     def _setup_udp_socket(self):
         """UDPソケットを作成してUDPポート番号を取得"""
@@ -139,9 +142,7 @@ class ChatClient:
             print(f"UDPソケット処理エラー: {e}")
             return False
 
-    def _send_tcp_request_and_receve_data(
-        self, room_name: str, user_name: str, operation: int
-    ) -> bool:
+    def _send_tcp_request(self, room_name: str, user_name: str, operation: int) -> bool:
         """TCPリクエストを送信してデータを受信
         ヘッダー：
                 1 + 1 + 1 + 29 = 32バイト
@@ -150,10 +151,8 @@ class ChatClient:
                 ユーザー名, UDPポート番号
         """
         try:
-            # TCPソケットを作成
-            tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # サーバーに接続
-            tcp_socket.connect((self.server_host, self.tcp_port))
+            self.tcp_socket.connect((self.server_host, self.tcp_port))
         except ConnectionRefusedError as e:
             print(f"TCP接続エラー: {e}")
             return False
@@ -185,12 +184,12 @@ class ChatClient:
 
         try:
             # データ送信
-            tcp_socket.sendall(request_data)
+            self.tcp_socket.sendall(request_data)
             # デバッグ
             # print(f"リクエストデータ：{request_data}")
             # 送信内容をユーザーに表示
             # print(f"TCPリクエストを送信しました: 作成したいルーム名{room_name}")
-            # return True
+            return True
         except ConnectionRefusedError as e:
             print(f"TCP接続エラー: {e}")
             return False
@@ -198,10 +197,12 @@ class ChatClient:
             print(f"TCP接続エラー: {e}")
             return False
 
+    def _receve_tcp_message(self):
+        """TCPメッセージを受信"""
         # レスポンスを受信
         try:
             # ヘッダー受信
-            header = tcp_socket.recv(32)
+            header = self.tcp_socket.recv(32)
 
             # ヘッダーの長さ確認
             if len(header) != 32:
@@ -211,18 +212,18 @@ class ChatClient:
             # ヘッダー
             room_name_length = header[0]
             operation = header[1]
-            state = header[2]
+            # state = header[2]
             payload_length = int.from_bytes(header[3:], "big")
 
             # ボディ受信
-            response_data = tcp_socket.recv(room_name_length + payload_length)
+            response_data = self.tcp_socket.recv(room_name_length + payload_length)
             # ルームネーム取得(UTF8デコード)
             response_room_name = response_data[:room_name_length].decode("utf-8")
             # ペイロードデータ取得(UTF8デコード)
             response_payload = response_data[room_name_length:].decode("utf-8")
 
             # TCPソケット閉じる
-            tcp_socket.close()
+            self.tcp_socket.close()
 
             # json形式に変更
             response_json = json.loads(response_payload)
@@ -234,11 +235,12 @@ class ChatClient:
                 # トークン、ルーム名、ユーザー名を設定
                 self.token = response_json.get("token")
                 self.room_name = response_room_name
-                self.username = user_name
+                self.username = response_json.get("user_name")
                 # デバッグ
                 # print(f"ルーム名: {self.room_name}")
                 # print(f"ユーザー名: {self.username}")
                 # print(f"トークン: {self.token}")
+                print(f"operation: {operation}")
 
                 # 設定内容をユーザーに表示
                 if operation == self.operation_room_create:

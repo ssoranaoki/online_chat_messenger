@@ -248,6 +248,7 @@ class ChatServer:
             "state": 2,
             "status": "success",
             "token": host_token,
+            "user_name": user_name,
             "message": f"ルーム名：{room_name}が作成されました",
         }
 
@@ -279,6 +280,7 @@ class ChatServer:
             "state": 2,
             "status": "success",
             "token": user_token,
+            "user_name": user_name,
             "message": f"ルーム名：{room_name}に参加しました",
         }
 
