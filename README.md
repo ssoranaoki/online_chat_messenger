@@ -38,7 +38,8 @@ online_chat_messenger/
 ### サーバー起動
 
 ```bash
-python server.py
+python server.py # windows
+python3 server.py # linux
 ```
 
 サーバーは以下のポートで起動します：
@@ -48,7 +49,8 @@ python server.py
 ### クライアント起動
 
 ```bash
-python client.py
+python client.py # windows
+python3 client.py # linux
 ```
 
 クライアント起動後、以下のメニューが表示されます：

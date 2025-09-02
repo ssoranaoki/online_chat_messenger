@@ -69,10 +69,11 @@ class ChatClient:
                     print(f"{user_choice}は無効な選択です。選択肢を確認してください")
 
         # TCPメッセージを受信
-        self._receve_tcp_message()
+        result_boolean_tcp_message = self._receve_tcp_message()
+        # print("self._receve_tcp_message():", result_boolean_tcp_message)
 
-        # ルーム一覧表示の場合はUDP接続開始しない。それ以外はUDP接続開始
-        if user_choice != self.LIST_ROOMS:
+        # ルーム一覧表示以外の処理とTCP受信メッセージにエラーが無い場合にUDP接続を開始する
+        if user_choice != self.LIST_ROOMS and result_boolean_tcp_message:
             # UDP接続開始
             self._start_udp_chat()
 
@@ -143,7 +144,7 @@ class ChatClient:
             return False
 
     def _send_tcp_request(self, room_name: str, user_name: str, operation: int) -> bool:
-        """TCPリクエストを送信してデータを受信
+        """TCPリクエストを送信
         ヘッダー：
                 1 + 1 + 1 + 29 = 32バイト
                 ルーム名, ユーザー名, 操作
@@ -275,11 +276,11 @@ class ChatClient:
         except ConnectionRefusedError as e:  # 接続エラー
             print(f"TCP接続エラー: {e}")
             return False
-        except OSError as e:  # オペレーションエラー
-            print(f"TCP接続エラー: {e}")
+        except OSError as e:  # OSエラー
+            print(f"OSエラー: {e}")
             return False
         except Exception as e:  # 例外処理
-            print(f"TCPリクエストエラー: {e}")
+            print(f"例外処理: {e}")
             return False
 
     def _start_udp_chat(self):
@@ -362,7 +363,7 @@ class ChatClient:
         while self.is_client_running:
             try:
                 # メッセージを受信
-                data, client_address = self.udp_socket.recvfrom(4024)  # type:ignore
+                data, client_address = self.udp_socket.recvfrom(4096)  # type:ignore
                 message = data.decode("utf-8")
 
                 # 受信したメッセージを表示

@@ -339,7 +339,7 @@ class ChatServer:
         while self.is_server_running:
             try:
                 # クライアントからのデータを受信
-                data, client_address = udp_socket.recvfrom(4024)
+                data, client_address = udp_socket.recvfrom(4096)
                 # デバッグ
                 print(f"data: {data}")
                 print(f"client_address: {client_address}")
