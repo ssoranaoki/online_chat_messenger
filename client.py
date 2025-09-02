@@ -368,10 +368,15 @@ class ChatClient:
 
                 # 受信したメッセージを表示
                 print(f"{message}")
+                # if "[システム]" in message:
+                #     print("ok")
+                # if "ルームが閉じられました" in message:
+                #     print("ok")
 
                 # 受信したメッセージの内容にルームが閉じられた事が含まれている場合の処理
-                if "[システム]" in message and "ルームが閉じられました" in message:
+                if "ホストが退出したため" in message:
                     print("ルームが閉じられました")
+                    print("エンターキーを押してください")
                     self.is_client_running = False
                     break
             except OSError as e:  # OSエラー
